@@ -1,3 +1,5 @@
 out/
 out2/
 node_modules/
+muse-usage.jsonl
+transcripts.tar.gz
