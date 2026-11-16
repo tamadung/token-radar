@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Launch Radar — Token Launch Radar</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>Launch Radar</h1>
+    <p class="sub">Which pre-token protocols are worth farming, and what their token would be worth if it launched today.</p>
+    <p class="meta" id="meta">Loading…</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="stats" id="stats"></section>
+
+  <section class="note">
+    <h2>How the value is priced</h2>
+    <p id="method">Loading…</p>
+    <p class="warn" id="limits">Loading…</p>
+  </section>
+
+  <section class="controls">
+    <input id="q" type="search" placeholder="Search a protocol…" aria-label="Search protocols">
+    <select id="fCat" aria-label="Filter by category"><option value="">All categories</option></select>
+    <select id="fChain" aria-label="Filter by chain"><option value="">All chains</option></select>
+    <select id="fVerdict" aria-label="Filter by verdict">
+      <option value="">All verdicts</option>
+      <option value="farm">Farm</option>
+      <option value="thin">Thin</option>
+      <option value="skip">Skip</option>
+    </select>
+    <select id="sort" aria-label="Sort the board">
+      <option value="rank">Sort: rank</option>
+      <option value="implied">Sort: implied value</option>
+      <option value="tvl">Sort: TVL</option>
+      <option value="change">Sort: 7-day change</option>
+      <option value="net">Sort: farm net</option>
+    </select>
+    <span class="count" id="count"></span>
+  </section>
+
+  <section class="board">
+    <table id="board">
+      <thead>
+        <tr>
+          <th data-k="rank">#</th>
+          <th data-k="name">Protocol</th>
+          <th data-k="category">Category</th>
+          <th data-k="chains">Chains</th>
+          <th data-k="tvl" class="num">TVL</th>
+          <th data-k="change" class="num">7d</th>
+          <th data-k="implied" class="num">Implied value</th>
+          <th data-k="net" class="num">Farm net</th>
+          <th data-k="verdict">Verdict</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </section>
+
+  <section class="detail" id="detail" hidden>
+    <h2 id="dTitle"></h2>
+    <p class="dmeta" id="dMeta"></p>
+    <div class="dgrid">
+      <div>
+        <h3>Model breakdown</h3>
+        <dl id="dModel"></dl>
+      </div>
+      <div>
+        <h3>Farm plan</h3>
+        <ol id="dFarm"></ol>
+      </div>
+    </div>
+    <button id="dClose" type="button">Close detail</button>
+  </section>
+
+  <section class="live">
+    <h2>Live tokens, for comparison</h2>
+    <p>These protocols already trade. The board shows the market's own value for them, never a model's guess — they are the comparables the curve was fitted to.</p>
+    <table id="liveTable">
+      <thead><tr><th>Protocol</th><th>Category</th><th class="num">TVL</th><th class="num">Market cap</th><th class="num">mcap / TVL</th></tr></thead>
+      <tbody id="liveRows"></tbody>
+    </table>
+  </section>
+
+  <footer>
+    <p>Launch Radar · model radar-2-comps · data: DefiLlama protocols snapshot, as of <span id="asof"></span>. The board's implied values are this entry's own claim, never the snapshot's. A protocol that records no token may still have one its record does not carry.</p>
+  </footer>
+</main>
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
