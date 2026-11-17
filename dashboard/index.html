@@ -12,17 +12,22 @@
     <h1>Launch Radar</h1>
     <p class="sub">Which pre-token protocols are worth farming, and what their token would be worth if it launched today.</p>
     <p class="meta" id="meta">Loading…</p>
+    <p class="verify" id="verify"></p>
   </div>
 </header>
 
 <main class="wrap">
-  <section class="stats" id="stats"></section>
-
-  <section class="note">
-    <h2>How the value is priced</h2>
-    <p id="method">Loading…</p>
-    <p class="warn" id="limits">Loading…</p>
+  <section class="hero" id="hero">
+    <div>
+      <h2>How a value is built</h2>
+      <p id="heroFormula">Loading…</p>
+      <p id="heroBands">Loading…</p>
+    </div>
+    <div id="scatter"></div>
   </section>
+
+  <section class="stats" id="stats"></section>
+  <section class="verdicts" id="verdicts"></section>
 
   <section class="controls">
     <input id="q" type="search" placeholder="Search a protocol…" aria-label="Search protocols">
@@ -40,6 +45,7 @@
       <option value="tvl">Sort: TVL</option>
       <option value="change">Sort: 7-day change</option>
       <option value="net">Sort: farm net</option>
+      <option value="odds">Sort: break-even odds</option>
     </select>
     <span class="count" id="count"></span>
   </section>
@@ -61,6 +67,7 @@
       </thead>
       <tbody id="rows"></tbody>
     </table>
+    <p class="boardnote" id="boardnote"></p>
   </section>
 
   <section class="detail" id="detail" hidden>
@@ -70,13 +77,39 @@
       <div>
         <h3>Model breakdown</h3>
         <dl id="dModel"></dl>
+        <h3>Nearest traded peers</h3>
+        <table id="dPeers"><thead><tr><th>Peer</th><th class="num">TVL</th><th class="num">Mcap</th><th class="num">× TVL</th><th class="num">At this TVL</th></tr></thead><tbody></tbody></table>
       </div>
       <div>
         <h3>Farm plan</h3>
+        <p class="dplan" id="dPlanMeta"></p>
         <ol id="dFarm"></ol>
+        <p class="dplan" id="dPlanTotals"></p>
       </div>
     </div>
     <button id="dClose" type="button">Close detail</button>
+  </section>
+
+  <section class="note">
+    <h2>How the value is priced</h2>
+    <p id="method">Loading…</p>
+    <p class="warn" id="limits">Loading…</p>
+  </section>
+
+  <section class="method" id="methodSec">
+    <h2>Tested blind: does the model hold up?</h2>
+    <p id="methodIntro"></p>
+    <h3>Four nested variants, each priced by a fit that never saw the token</h3>
+    <table id="variants"><thead><tr><th>Variant</th><th class="num">Median miss</th><th class="num">Mean |log miss|</th><th class="num">Rank corr.</th><th class="num">Within 3×</th></tr></thead><tbody></tbody></table>
+    <p id="variantNote"></p>
+    <h3>Walk-forward: fit before the date, tested on later launches</h3>
+    <table id="walkforward"><thead><tr><th>Cutoff</th><th class="num">Fit on</th><th class="num">Tested on</th><th class="num">Median miss</th><th class="num">Flat multiple</th></tr></thead><tbody></tbody></table>
+    <p id="walkNote"></p>
+    <h3>Family offsets (shrunk, capped at 10×)</h3>
+    <table id="families"><thead><tr><th>Family</th><th class="num">Offset</th><th class="num">Multiple</th></tr></thead><tbody></tbody></table>
+    <h3>The universe: what was ranked, what was set aside, and why</h3>
+    <p id="universeNote"></p>
+    <table id="setaside"><thead><tr><th>Protocol</th><th class="num">TVL</th><th>Why it is set aside</th></tr></thead><tbody></tbody></table>
   </section>
 
   <section class="live">
@@ -89,10 +122,11 @@
   </section>
 
   <footer>
-    <p>Launch Radar · model radar-2-comps · data: DefiLlama protocols snapshot, as of <span id="asof"></span>. The board's implied values are this entry's own claim, never the snapshot's. A protocol that records no token may still have one its record does not carry.</p>
+    <p>Launch Radar · model <span id="mver"></span> · data: DefiLlama protocols snapshot, as of <span id="asof"></span>. The board's implied values are this entry's own claim, never the snapshot's. A protocol that records no token may still have one its record does not carry.</p>
   </footer>
 </main>
 <script src="../data.js"></script>
+<script src="model.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

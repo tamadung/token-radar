@@ -30,8 +30,23 @@ body {
 .top h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.5px; }
 .top .sub { margin: 0 0 8px; color: #c3cede; font-size: 16px; }
 .top .meta { margin: 0; color: #8fa0b5; font-size: 13px; }
+.top .verify { margin: 6px 0 0; color: #7ee2a0; font-size: 13px; }
 main { padding: 20px 0 40px; }
 section { margin-bottom: 22px; }
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  align-items: start;
+}
+.hero h2 { margin: 0 0 8px; font-size: 17px; }
+.hero p { margin: 6px 0; font-size: 14px; }
+#scatter svg { width: 100%; height: auto; display: block; }
+#scatter .scap { color: var(--muted); font-size: 12px; margin: 4px 0 0; }
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -45,6 +60,19 @@ section { margin-bottom: 22px; }
 }
 .stat b { display: block; font-size: 22px; letter-spacing: -0.5px; }
 .stat span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; }
+.verdicts {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+}
+.verdicts .bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; margin: 8px 0 6px; }
+.verdicts .bar i { display: block; height: 100%; }
+.verdicts .bar .bf { background: var(--green); }
+.verdicts .bar .bt { background: #d9930d; }
+.verdicts .bar .bs { background: var(--red); }
+.verdicts .legend { color: var(--muted); font-size: 13px; }
 .note {
   background: var(--card);
   border: 1px solid var(--line);
@@ -94,6 +122,7 @@ tbody tr:last-child td { border-bottom: none; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .pos { color: var(--green); }
 .neg { color: var(--red); }
+.small { color: var(--muted); font-size: 12px; }
 .pill {
   display: inline-block;
   padding: 2px 9px;
@@ -104,6 +133,7 @@ tbody tr:last-child td { border-bottom: none; }
 .pill.farm { background: var(--green-soft); color: var(--green); }
 .pill.thin { background: var(--amber-soft); color: var(--amber); }
 .pill.skip { background: var(--red-soft); color: var(--red); }
+.boardnote { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
 .detail {
   background: var(--card);
   border: 1px solid var(--line);
@@ -119,6 +149,12 @@ tbody tr:last-child td { border-bottom: none; }
 .detail dd { margin: 0 0 10px; font-variant-numeric: tabular-nums; }
 .detail ol { margin: 0; padding-left: 20px; font-size: 14px; }
 .detail li { margin-bottom: 8px; }
+.detail .dplan { font-size: 14px; margin: 0 0 10px; }
+.detail .dplan b { font-variant-numeric: tabular-nums; }
+#dPeers { font-size: 13px; margin-bottom: 12px; }
+#dPeers th, #dPeers td { padding: 6px 8px; }
+#dPeers tbody tr { cursor: default; }
+#dPeers tbody tr:hover { background: transparent; }
 .detail button {
   margin-top: 14px;
   font: inherit;
@@ -130,6 +166,19 @@ tbody tr:last-child td { border-bottom: none; }
   cursor: pointer;
 }
 .detail button:hover { background: var(--accent-soft); }
+.method {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.method h2 { margin: 0 0 8px; font-size: 18px; }
+.method h3 { margin: 16px 0 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); }
+.method p { font-size: 14px; margin: 6px 0; }
+.method table { font-size: 13px; }
+.method th, .method td { padding: 7px 9px; }
+.method tbody tr { cursor: default; }
+.method tbody tr:hover { background: transparent; }
 .live h2 { font-size: 18px; margin: 0 0 6px; }
 .live p { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
 .live tbody tr { cursor: default; }
@@ -137,6 +186,6 @@ tbody tr:last-child td { border-bottom: none; }
 footer { color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 14px; }
 @media (max-width: 720px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
-  .dgrid { grid-template-columns: 1fr; }
+  .dgrid, .hero { grid-template-columns: 1fr; }
   th:nth-child(3), td:nth-child(3), th:nth-child(4), td:nth-child(4) { display: none; }
 }

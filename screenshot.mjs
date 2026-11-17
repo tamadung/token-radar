@@ -44,5 +44,16 @@ await page.evaluate(() => {
 await new Promise(r => setTimeout(r, 600));
 await page.screenshot({ path: join(shotsDir, 'filtered.png') });
 
+// 4. Method view: scroll to the method section (variant table + walk-forward).
+await page.evaluate(() => {
+  document.getElementById('fVerdict').value = '';
+  document.getElementById('fVerdict').dispatchEvent(new Event('change', { bubbles: true }));
+  const m = document.getElementById('methodSec');
+  const y = m.getBoundingClientRect().top + window.scrollY;
+  window.scrollTo(0, y);
+});
+await new Promise(r => setTimeout(r, 600));
+await page.screenshot({ path: join(shotsDir, 'method.png') });
+
 await browser.close();
 console.log('screenshots done');
