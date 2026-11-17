@@ -70,4 +70,16 @@ node dossier-check.mjs out     # dossier rebuild must MATCH
      the 161-row set-aside table makes the page long. Minor: the dossier text carries all.
   Fixes applied before submit: method.png added (judge sees the validation); conservative
   odds over 100% now explained in the detail view; "Stop rule: Stop rule:" duplication fixed.
-- M4 (17 Nov): bundle + makefun check + resubmit (see below).
+- M4 (17 Nov): bundle + makefun check + resubmit.
+  Bundle transcripts-v2.tar.gz sha256 5fd26348f078f8e7f85ebffd1324099d7f8cc65877189549e4566319f5e1e12e
+  (2 sessions: build subagent d8a7bc57 + main 689f3f9e; 77 usage rows attached, all main
+  session — subagent rows are written only when the subagent run completes, so the
+  parent re-queries muse.db for agent_id d8a7bc57 after this run and re-bundles if a
+  v3 is ever needed). makefun check: 13 pass, 0 fail (thinking_reproduces 68.4%,
+  thinking_priced 77 records, thinking_revised app.js 9 / main.ts 5).
+  RESUBMITTED 17 Nov 07:24:24Z: entry 01a1e864-8499-72fc-8f1f-c0c043ab5179,
+  commit 5ed49bf, title "Launch Radar: conservative value, break-even odds, and a
+  board that says skip", signed by wallet DAKd18mfrQg5D2BymzLea2GmSYdCn2YWqtVckvWk5ubA.
+  Claim code AF-3FJK9-TE05G-51GHT-NH424 (PRIVAT). v1 entry 01a1e23b remains superseded
+  (Force_Last: this is now the final entry). Quota used: 2/10 total, 2/5 today.
+  Note: kit copy is level 17, site is level 19 — submission still accepted (HTTP 202).
