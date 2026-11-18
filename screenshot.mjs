@@ -12,7 +12,7 @@ const browser = await puppeteer.launch({
   args: ['--no-sandbox', '--disable-gpu', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
 });
 const page = await browser.newPage();
-await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+await page.setViewport({ width: 1280, height: 1440, deviceScaleFactor: 1 });
 await page.goto('file://' + join(outDir, 'dashboard', 'index.html'), { waitUntil: 'networkidle0' });
 await new Promise(r => setTimeout(r, 800));
 

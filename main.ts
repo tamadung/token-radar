@@ -121,6 +121,84 @@ function parseSnapshot(text: string): Snapshot {
 
 const round4 = (n: number): number => Math.round(n * 1e4) / 1e4;
 
+/** Band calibration (leave-one-out): how often the LOO band holds the real market cap. */
+function bandCalibration(traded: SnapshotProtocol[], asOf: string): { p25_75: number; p10_90: number } {
+  const pts = RadarModel.fitPoints(traded, asOf, true);
+  const full = RadarModel.fitCurve(pts, { slope: true, families: true, priors: true });
+  const resid = pts.map((pt: { y: number; x: number; fam: string }) => pt.y - RadarModel.predictLog(full, pt.x, pt.fam));
+  const sd = Math.sqrt(resid.reduce((s: number, e: number) => s + e * e, 0) / Math.max(1, pts.length - 2));
+  let in2575 = 0, in1090 = 0;
+  pts.forEach((pt: { y: number; x: number; fam: string }, i: number) => {
+    const loo = RadarModel.fitCurve(pts.filter((_: unknown, j: number) => j !== i), { slope: true, families: true, priors: true });
+    const d = Math.abs(pt.y - RadarModel.predictLog(loo, pt.x, pt.fam));
+    if (d <= 0.674 * sd) in2575++;
+    if (d <= 1.282 * sd) in1090++;
+  });
+  return { p25_75: in2575 / pts.length, p10_90: in1090 / pts.length };
+}
+
+/** Launch rate by tracking age: share of protocols in each age bucket that record a token. */
+function tenureTable(snap: Snapshot, asOf: string): { label: string; total: number; has_token: number; share: number }[] {
+  const buckets: [number, number, string][] = [
+    [0, 195, '<195d'], [195, 365, '195-365d'], [365, 730, '1-2y'],
+    [730, 1095, '2-3y'], [1095, 1460, '3-4y'], [1460, 1e9, '4y+'],
+  ];
+  return buckets.map(([lo, hi, label]) => {
+    const inB = snap.protocols.filter((p) => {
+      const d = RadarModel.daysSince(p.listed_at, asOf);
+      return d !== null && d >= lo && d < hi;
+    });
+    const has = inB.filter((p) => RadarModel.tokenStatus(p) !== 'none').length;
+    return { label, total: inB.length, has_token: has, share: inB.length ? has / inB.length : 0 };
+  });
+}
+
+/** Huber fit (IRLS, k=1.345): the curve with outliers down-weighted, for the ablation. */
+function fitHuber(points: { x: number; y: number; fam: string }[]): { a: number; b: number; fam: Record<string, number> } {
+  let fit = RadarModel.fitCurve(points, { slope: true, families: false, priors: true });
+  for (let it = 0; it < 12; it++) {
+    const r = points.map((pt) => pt.y - fit.a - fit.b * pt.x);
+    const s = 1.4826 * RadarModel.quantile(r.map(Math.abs), 0.5) * 1.345;
+    let sw = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+    points.forEach((pt, j) => {
+      const w = Math.min(1, s / Math.max(Math.abs(r[j]), 1e-9));
+      sw += w; sx += w * pt.x; sy += w * pt.y; sxx += w * pt.x * pt.x; sxy += w * pt.x * pt.y;
+    });
+    const b = (sw * sxy - sx * sy) / (sw * sxx - sx * sx), a = (sy - b * sx) / sw;
+    if (Math.abs(a - fit.a) < 1e-6 && Math.abs(b - fit.b) < 1e-6) { fit = { a, b }; break; }
+    fit = { a, b };
+  }
+  const fam: Record<string, number> = {};
+  const sum: Record<string, number> = {}, cnt: Record<string, number> = {};
+  points.forEach((pt) => {
+    const e = pt.y - fit.a - fit.b * pt.x;
+    sum[pt.fam] = (sum[pt.fam] || 0) + Math.max(-2.302585092994046, Math.min(2.302585092994046, e));
+    cnt[pt.fam] = (cnt[pt.fam] || 0) + 1;
+  });
+  Object.keys(sum).sort().forEach((f) => { fam[f] = sum[f] / (cnt[f] + 8); });
+  return { a: fit.a, b: fit.b, fam };
+}
+
+/** Top-20 kept when one piece of the model is removed. */
+function ablationTable(traded: SnapshotProtocol[], rows: { p: SnapshotProtocol }[], asOf: string): { noFamily: number; noPriors: number; huber: number; flat: number } {
+  const full = RadarModel.fitCurve(RadarModel.fitPoints(traded, asOf, true), { slope: true, families: true, priors: true });
+  const top = (valueFn: (p: SnapshotProtocol) => number): Set<string> =>
+    new Set(rows.map((r) => ({ slug: r.p.slug, v: valueFn(r.p) }))
+      .sort((x, y) => y.v - x.v || (x.slug < y.slug ? -1 : 1)).slice(0, 20).map((x) => x.slug));
+  const base = top((p) => RadarModel.impliedValue(p, full, asOf).value);
+  const keep = (s: Set<string>): number => { let n = 0; base.forEach((x) => { if (s.has(x)) n++; }); return n; };
+  const noFam = RadarModel.fitCurve(RadarModel.fitPoints(traded, asOf, true), { slope: true, families: false, priors: true });
+  const noPri = RadarModel.fitCurve(RadarModel.fitPoints(traded, asOf, false), { slope: true, families: true, priors: false });
+  const huber = fitHuber(RadarModel.fitPoints(traded, asOf, true));
+  const medR = Math.exp(RadarModel.quantile(traded.map((p) => Math.log((p.mcap_usd ?? 1) / p.tvl_usd)), 0.5));
+  return {
+    noFamily: keep(top((p) => RadarModel.impliedValue(p, noFam, asOf).value)),
+    noPriors: keep(top((p) => Math.exp(noPri.a + noPri.b * Math.log(p.tvl_usd)) * Math.exp(noPri.fam[RadarModel.familyOf(p.category)] || 0))),
+    huber: keep(top((p) => RadarModel.impliedValue(p, huber, asOf).value)),
+    flat: keep(top((p) => p.tvl_usd * medR)),
+  };
+}
+
 /** One row of board.json: the ranked board's row, with the model, the band, the peers and the plan. */
 interface BoardRow {
   rank: number;
@@ -161,6 +239,7 @@ interface BoardRow {
     slice_usd: number;
     expected_value_usd: number;
     net_usd: number;
+    net_per_hour_usd: number;
     verdict: 'farm' | 'thin' | 'skip';
     break_even_odds_pct: number;
     conservative_odds_pct: number;
@@ -172,6 +251,7 @@ interface BoardRow {
     stop_drop_pct: number;
     capped: boolean;
   };
+  safety: string[];
 }
 
 /** A live-token protocol: it already trades, so the board shows the market's own value, not a model's. */
@@ -183,6 +263,19 @@ interface LiveRow {
   tvl_usd: number;
   mcap_usd: number | null;
   change_7d: number | null;
+}
+
+/** A traded protocol: the market's own value against the curve's claim for the same TVL. */
+interface TradedRow {
+  slug: string;
+  name: string;
+  category: string | null;
+  chains: string[];
+  tvl_usd: number;
+  mcap_usd: number;
+  change_7d: number | null;
+  multiple: number;
+  curve_value_usd: number;
 }
 
 /** Everything the dashboard renders, from the snapshot. */
@@ -197,6 +290,10 @@ interface RadarData {
   validation: {
     variants: { key: string; label: string; median_miss: number; mean_log_miss: number; rank_corr: number; within_3x: number }[];
     walk_forward: { cutoff: string; train: number; test: number; median_miss: number; flat_miss: number }[];
+    time_split: { train: number; test: number; median_miss: number; flat_miss: number } | null;
+    calibration: { p25_75: number; p10_90: number };
+    tenure: { label: string; total: number; has_token: number; share: number }[];
+    ablation: { noFamily: number; noPriors: number; huber: number; flat: number };
     rank_moves_5: number;
     rank_moves_10: number;
   };
@@ -205,6 +302,7 @@ interface RadarData {
   board_size: number;
   live_size: number;
   rows: BoardRow[];
+  traded: TradedRow[];
   live: LiveRow[];
   snapshot: Snapshot;
 }
@@ -260,6 +358,15 @@ const board: BoardRow[] = result.rows.map((row) => {
   const p = row.p;
   const plan = row.plan;
   const totalOutlay = plan.deposit + plan.costs + plan.capitalCost;
+  const hasStep = (kind: string) => plan.steps.some((s: { kind: string }) => s.kind === kind);
+  const safety = [
+    'Open it from its DefiLlama listing on day 0 and bookmark that domain.',
+    hasStep('kyc')
+      ? 'This protocol asks for KYC — allow 1 to 3 days before you deposit.'
+      : 'Check its terms allow users in your country before you deposit.',
+    'Exit waits: ' + plan.exitWait + (hasStep('unbond') ? ' — start unbonding 14 days before the exit.' : ''),
+    'If a token launches, claim only through the domain bookmarked on day 0, never through a link sent to you.',
+  ];
   return {
     rank: row.rank,
     slug: p.slug,
@@ -306,6 +413,7 @@ const board: BoardRow[] = result.rows.map((row) => {
       slice_usd: Math.round(plan.slice * 100) / 100,
       expected_value_usd: Math.round(plan.slice * 100) / 100,
       net_usd: Math.round(plan.net * 100) / 100,
+      net_per_hour_usd: Math.round((plan.net / Math.max(1, plan.minutes / 60)) * 100) / 100,
       verdict: plan.verdict,
       break_even_odds_pct: plan.odds,
       conservative_odds_pct: row.consOdds,
@@ -317,6 +425,7 @@ const board: BoardRow[] = result.rows.map((row) => {
       stop_drop_pct: plan.drop,
       capped: plan.capped,
     },
+    safety,
   };
 });
 
@@ -325,6 +434,24 @@ if (issue !== null) {
   process.stderr.write(`token radar: the model wrote a board the gate refuses: ${issue}\n`);
   process.exit(1);
 }
+
+const traded: TradedRow[] = result.universe.traded
+  .filter((p) => (p as { mcap_usd: number | null }).mcap_usd !== null)
+  .sort((a, b) => ((b as { mcap_usd: number }).mcap_usd ?? 0) - ((a as { mcap_usd: number }).mcap_usd ?? 0))
+  .map((p) => {
+    const mcap = (p as { mcap_usd: number }).mcap_usd;
+    return {
+      slug: p.slug,
+      name: p.name,
+      category: p.category,
+      chains: p.chains,
+      tvl_usd: p.tvl_usd,
+      mcap_usd: mcap,
+      change_7d: p.change_7d,
+      multiple: round4(mcap / p.tvl_usd),
+      curve_value_usd: RadarModel.impliedValue(p, result.fit, snapshot.as_of).value,
+    };
+  });
 
 const live: LiveRow[] = snapshot.protocols
   .filter((p) => RadarModel.tokenStatus(p) === 'trades' && p.category !== 'CEX')
@@ -381,6 +508,17 @@ const radar: RadarData = {
       median_miss: round4(w.medianMiss),
       flat_miss: round4(w.flatMiss),
     })),
+    time_split: result.timeSplit
+      ? {
+          train: result.timeSplit.train,
+          test: result.timeSplit.test,
+          median_miss: round4(result.timeSplit.medianMiss),
+          flat_miss: round4(result.timeSplit.flatMiss),
+        }
+      : null,
+    calibration: (() => { const c = bandCalibration(result.universe.traded, snapshot.as_of); return { p25_75: round4(c.p25_75), p10_90: round4(c.p10_90) }; })(),
+    tenure: tenureTable(snapshot, snapshot.as_of).map((t) => ({ label: t.label, total: t.total, has_token: t.has_token, share: round4(t.share) })),
+    ablation: ablationTable(result.universe.traded, result.rows, snapshot.as_of),
     rank_moves_5: result.moves.five,
     rank_moves_10: result.moves.ten,
   },
@@ -389,6 +527,7 @@ const radar: RadarData = {
   board_size: board.length,
   live_size: live.length,
   rows: board,
+  traded,
   live,
   snapshot,
 };

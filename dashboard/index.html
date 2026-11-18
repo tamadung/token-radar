@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Launch Radar — Token Launch Radar</title>
+<title>Launch Radar</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -28,42 +28,39 @@
 
   <section class="stats" id="stats"></section>
   <section class="verdicts" id="verdicts"></section>
+  <p class="bestfarms" id="bestfarms"></p>
 
   <section class="controls">
-    <input id="q" type="search" placeholder="Search a protocol…" aria-label="Search protocols">
-    <select id="fCat" aria-label="Filter by category"><option value="">All categories</option></select>
-    <select id="fChain" aria-label="Filter by chain"><option value="">All chains</option></select>
-    <select id="fVerdict" aria-label="Filter by verdict">
+    <input id="q" type="search" placeholder="Search a protocol…">
+    <select id="fCat"><option value="">All categories</option></select>
+    <select id="fChain"><option value="">All chains</option></select>
+    <select id="fVerdict">
       <option value="">All verdicts</option>
       <option value="farm">Farm</option>
       <option value="thin">Thin</option>
       <option value="skip">Skip</option>
     </select>
-    <select id="sort" aria-label="Sort the board">
-      <option value="rank">Sort: rank</option>
-      <option value="implied">Sort: implied value</option>
-      <option value="tvl">Sort: TVL</option>
-      <option value="change">Sort: 7-day change</option>
-      <option value="net">Sort: farm net</option>
-      <option value="odds">Sort: break-even odds</option>
+    <select id="sort">
+      <option value="rank">Rank</option>
+      <option value="implied">Implied value</option>
+      <option value="tvl">TVL</option>
+      <option value="change">7-day change</option>
+      <option value="net">Farm net</option>
+      <option value="perhour">Farm $/hour</option>
+      <option value="odds">Break-even odds</option>
     </select>
     <span class="count" id="count"></span>
   </section>
 
+  <div class="tabs">
+    <button id="tabTodo" type="button" class="on">Still to come</button>
+    <button id="tabTraded" type="button">Already trades</button>
+  </div>
+
   <section class="board">
     <table id="board">
       <thead>
-        <tr>
-          <th data-k="rank">#</th>
-          <th data-k="name">Protocol</th>
-          <th data-k="category">Category</th>
-          <th data-k="chains">Chains</th>
-          <th data-k="tvl" class="num">TVL</th>
-          <th data-k="change" class="num">7d</th>
-          <th data-k="implied" class="num">Implied value</th>
-          <th data-k="net" class="num">Farm net</th>
-          <th data-k="verdict">Verdict</th>
-        </tr>
+        <tr id="headRow"></tr>
       </thead>
       <tbody id="rows"></tbody>
     </table>
@@ -85,6 +82,8 @@
         <p class="dplan" id="dPlanMeta"></p>
         <ol id="dFarm"></ol>
         <p class="dplan" id="dPlanTotals"></p>
+        <h3>Before you deposit</h3>
+        <ul id="dSafety"></ul>
       </div>
     </div>
     <button id="dClose" type="button">Close detail</button>
@@ -99,30 +98,27 @@
   <section class="method" id="methodSec">
     <h2>Tested blind: does the model hold up?</h2>
     <p id="methodIntro"></p>
-    <h3>Four nested variants, each priced by a fit that never saw the token</h3>
+    <h3>Four nested variants</h3>
     <table id="variants"><thead><tr><th>Variant</th><th class="num">Median miss</th><th class="num">Mean |log miss|</th><th class="num">Rank corr.</th><th class="num">Within 3×</th></tr></thead><tbody></tbody></table>
     <p id="variantNote"></p>
-    <h3>Walk-forward: fit before the date, tested on later launches</h3>
+    <h3>Walk-forward</h3>
     <table id="walkforward"><thead><tr><th>Cutoff</th><th class="num">Fit on</th><th class="num">Tested on</th><th class="num">Median miss</th><th class="num">Flat multiple</th></tr></thead><tbody></tbody></table>
     <p id="walkNote"></p>
-    <h3>Family offsets (shrunk, capped at 10×)</h3>
-    <table id="families"><thead><tr><th>Family</th><th class="num">Offset</th><th class="num">Multiple</th></tr></thead><tbody></tbody></table>
-    <h3>The universe: what was ranked, what was set aside, and why</h3>
+    <p id="timeSplit"></p>
+    <p id="calibration"></p>
+    <h3>Token by age</h3>
+    <p id="tenure"></p>
+    <h3>Ablation</h3>
+    <p id="ablation"></p>
+    <h3>Family offsets</h3>
+    <p id="familiesLine"></p>
+    <h3>The universe</h3>
     <p id="universeNote"></p>
     <table id="setaside"><thead><tr><th>Protocol</th><th class="num">TVL</th><th>Why it is set aside</th></tr></thead><tbody></tbody></table>
   </section>
 
-  <section class="live">
-    <h2>Live tokens, for comparison</h2>
-    <p>These protocols already trade. The board shows the market's own value for them, never a model's guess — they are the comparables the curve was fitted to.</p>
-    <table id="liveTable">
-      <thead><tr><th>Protocol</th><th>Category</th><th class="num">TVL</th><th class="num">Market cap</th><th class="num">mcap / TVL</th></tr></thead>
-      <tbody id="liveRows"></tbody>
-    </table>
-  </section>
-
   <footer>
-    <p>Launch Radar · model <span id="mver"></span> · data: DefiLlama protocols snapshot, as of <span id="asof"></span>. The board's implied values are this entry's own claim, never the snapshot's. A protocol that records no token may still have one its record does not carry.</p>
+    <p>Launch Radar · model <span id="mver"></span> · data: DefiLlama snapshot, as of <span id="asof"></span>. Implied values are this entry's own claim.</p>
   </footer>
 </main>
 <script src="../data.js"></script>
